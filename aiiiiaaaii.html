@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trợ lý AI Tư vấn PCCC (Offline)</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .chat-container { width: 100%; max-width: 700px; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 80vh; }
+        .chat-header { background: #d9534f; color: white; padding: 15px; border-top-left-radius: 8px; border-top-right-radius: 8px; text-align: center; font-size: 18px; font-weight: bold; }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .message { padding: 10px 15px; border-radius: 6px; max-width: 80%; line-height: 1.4; word-wrap: break-word; }
+        .user-message { background: #007bff; color: white; align-self: flex-end; }
+        .ai-message { background: #e9ecef; color: #333; align-self: flex-start; }
+        .chat-input-area { display: flex; padding: 15px; border-top: 1px solid #ddd; background: #fff; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
+        .chat-input-area input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; outline: none; font-size: 14px; }
+        .chat-input-area button { background: #d9534f; color: white; border: none; padding: 10px 20px; margin-left: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .chat-input-area button:hover { background: #c9302c; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">Trợ lý AI An toàn Phòng Cháy Chữa Cháy (Offline)</div>
+    <div class="chat-messages" id="chatMessages">
+        <div class="message ai-message">Xin chào! Tôi là trợ lý AI chuyên về phòng cháy chữa cháy. Bạn cần tư vấn về kỹ năng thoát hiểm, cách dùng bình cứu hỏa hay quy định an toàn nào không?</div>
+    </div>
+    <div class="chat-input-area">
+        <input type="text" id="userInput" placeholder="Nhập câu hỏi về PCCC..." onkeydown="checkEnter(event)">
+        <button onclick="sendMessage()">Gửi</button>
+    </div>
+</div>
+
+<script>
+    const OLLAMA_URL = 'http://localhost:11434/api/generate';
+    // Thiết lập hệ thống (System Prompt) chuyên biệt cho PCCC
+    const SYSTEM_PROMPT = "Bạn là một chuyên gia tư vấn an toàn Phòng cháy chữa cháy (PCCC) tại Việt Nam. Hãy trả lời ngắn gọn, chính xác, dễ hiểu về cách xử lý khi có cháy, kỹ năng thoát nạn, cách sử dụng bình chữa cháy, và quy định an toàn điện. Chỉ tập trung trả lời các vấn đề liên quan đến PCCC.";
+
+    async function sendMessage() {
+        const inputField = document.getElementById('userInput');
+        const messageText = inputField.value.trim();
+        if (!messageText) return;
+
+        const chatMessages = document.getElementById('chatMessages');
+
+        // Hiển thị tin nhắn người dùng
+        const userDiv = document.createElement('div');
+        userDiv.className = 'message user-message';
+        userDiv.textContent = messageText;
+        chatMessages.appendChild(userDiv);
+
+        inputField.value = '';
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Tạo khung tin nhắn chờ phản hồi từ AI
+        const aiDiv = document.createElement('div');
+        aiDiv.className = 'message ai-message';
+        aiDiv.textContent = 'Đang suy nghĩ...';
+        chatMessages.appendChild(aiDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        try {
+            const response = await fetch(OLLAMA_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: 'qwen2.5', // Tên model bạn đã tải ở bước 1
+                    prompt: `${SYSTEM_PROMPT}\n\nCâu hỏi: ${messageText}`,
+                    stream: false
+                })
+            });
+
+            const data = await response.json();
+            aiDiv.textContent = data.response || "Xin lỗi, tôi không thể xử lý yêu cầu này lúc này.";
+        } catch (error) {
+            aiDiv.textContent = 'Lỗi kết nối tới mô hình chạy cục bộ. Hãy đảm bảo Ollama đang chạy trên máy tính của bạn!';
+        }
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function checkEnter(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    }
+</script>
+
+</body>
+</html>
